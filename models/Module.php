@@ -1,7 +1,9 @@
 <?php // -*- mode:php; tab-width:4; indent-tabs-mode:t; c-basic-offset:4; -*-
-// The MIT License
 //
-// Copyright (c) 2008-2011 Ted Kulp
+// carl -- A convenience library for the Silk Framework
+// Copyright (c) 2008-2011 Defined Clarity
+//
+// The MIT License
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -62,3 +64,5 @@ class Module extends \silk\model\Model
 	 **/
 	protected $modified_date;
 }
+
+# vim:ts=4 sw=4 noet
