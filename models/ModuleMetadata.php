@@ -23,46 +23,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-namespace \carl\models;
+namespace carl\models;
 
 /**
- * @Entity
- * @Table(name="carl_modules")
+ * @Document(collection="carl_module_metadata")
  */
-class Module extends \silk\model\Model
+class ModuleMetadata extends \silk\model\Model
 {
 	/**
-	 * @Id @Column(type="integer")
-	 * @GeneratedValue
+	 * @Id(strategy="UUID")
 	 **/
 	protected $id;
 
 	/**
-	 * @Column(length=25)
+	 * @Field
 	 * @Validation:NotEmpty
 	 **/
 	protected $name;
 
 	/**
-	 * @Column(length=75)
+	 * @Field
 	 * @Validation:NotEmpty
 	 **/
 	protected $version;
 
 	/**
-	 * @Column(type="boolean")
+	 * @Field(type="boolean")
 	 **/
 	protected $active;
 
 	/**
-	 * @Column(type="datetime")
+	 * @Field(type="date")
 	 **/
-	protected $create_date;
+	protected $createDate;
 
 	/**
-	 * @Column(type="datetime")
+	 * @Field(type="date")
 	 **/
-	protected $modified_date;
+	protected $modifiedDate;
 }
 
 # vim:ts=4 sw=4 noet
