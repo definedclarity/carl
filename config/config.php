@@ -26,6 +26,6 @@
 use \silk\action\Route;
 
 //Push all URLS that haven't matched to Carl
-Route::registerRouteCallback('*', '\\carl\\RouteHandler::handleRequest');
+Route::registerRouteCallback('*', '\\carl\\core\\RouteHandler::handleRequest');
 
 # vim:ts=4 sw=4 noet

@@ -1,0 +1,25 @@
+name: Test
+version: 1.0
+summary: Does some test things that are really awesome.
+authors:
+    - name: Ted Kulp
+      email: ted@cmsmadesimple.org
+dependencies:
+    - name: Parent Module
+      minimum_version: 1.0
+events_watched:
+    - core:module:installed
+    - core:module:uninstalled
+    - some_module:some_event
+events_sent:
+    - some_event
+    - some_other_event
+capabilities:
+    - parses_url
+    - does_something_cool
+plugins:
+    - name: some_plugin
+    - name: menu_children
+      callback: menu_children_plugin_callback
+auto_install: true
+auto_upgrade: true

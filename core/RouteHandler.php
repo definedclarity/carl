@@ -23,13 +23,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-namespace carl;
+namespace carl\core;
 
 class RouteHandler extends \silk\core\Object
 {
 	public static function handleRequest($params, $requested_uri)
 	{
-		var_dump($params, $requested_uri);
+		//var_dump($params, $requested_uri);
+		ModuleLoader::loadModuleData();
+		var_dump(ModuleLoader::getModuleList());
 	}
 }
 

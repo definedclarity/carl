@@ -23,9 +23,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-namespace carl;
+namespace carl\core;
 
-use \car\models\ModuleMetadata;
+use \carl\models\ModuleMetadata;
 
 class ModuleLoader extends \silk\core\Object
 {
@@ -39,26 +39,20 @@ class ModuleLoader extends \silk\core\Object
 	
 	public static function loadModuleData()
 	{
-		$files = self::findModuleInfoFiles(); //Actually slower if it's cached -- have to retest with lots of modules
+		$files = self::findModuleInfoFiles();
 		$installed_data = self::getInstalledModuleDetails();
 		$module_list = array();
 		foreach ($files as $one_file)
 		{
 			if (is_array($one_file))
 				$module_data = $one_file;
-			else if (endsWith($one_file, '.xml'))
-				$module_data = self::xmlifyModuleInfoFile($one_file);
 			else if (endsWith($one_file, '.yml'))
 				$module_data = self::ymlifyModuleInfoFile($one_file);
-			
-			if (!isset($module_data['admin_section']))
-				$module_data['admin_section'] = 'extensions';
 			
 			$module_data = self::injectInstalledDataForModule($module_data, $installed_data);
 			$module_list[$module_data['name']] = $module_data;
 		}
 		
-		self::checkCoreVersion($module_list);
 		self::checkDependencies($module_list);
 		self::checkUninstallAll($module_list);
 		self::registerPlugins($module_list);
@@ -98,21 +92,10 @@ class ModuleLoader extends \silk\core\Object
 		{
 			if (isset($one_module['events_watched']))
 			{
-				foreach ($one_module['events_watched'] as $k => $v)
+				foreach ($one_module['events_watched'] as $event_name)
 				{
-					if ($k == 'module' && is_array($v))
-					{
-						$name = $v['name'];
-						foreach ($v['events'] as $k2 => $v2)
-						{
-							if ($k2 == 'event')
-							{
-								$event_name = $name . ':' . $v2;
-								\silk\core\EventManager::registerEventHandler($event_name, '\carl\ModuleLoader::eventProxy');
-								self::$event_lookup[$event_name][] = $one_module['name'];
-							}
-						}
-					}
+					\silk\core\EventManager::registerEventHandler($event_name, '\carl\ModuleLoader::eventProxy');
+					self::$event_lookup[$event_name][] = $one_module['name'];
 				}
 			}
 		}
@@ -145,35 +128,23 @@ class ModuleLoader extends \silk\core\Object
 	
 	public static function checkUninstall($module_name, &$module_list)
 	{
-		if (!isset($module_list[$module_name]['can_uninstall']))
+		if (isset($module_list[$module_name]))
 		{
-			$module_list[$module_name]['can_uninstall'] = true;
-			if (isset($module_list[$module_name]['dependencies']))
+			if (!isset($module_list[$module_name]['can_uninstall']))
 			{
-				foreach ($module_list[$module_name]['dependencies'] as $one_dep)
+				$module_list[$module_name]['can_uninstall'] = true;
+				if (isset($module_list[$module_name]['dependencies']))
 				{
-					$dep_mod = $module_list[$one_dep['module']['name']];
-					self::checkUninstall($one_dep['module']['name'], $module_list);
-
-					if ($dep_mod && $dep_mod['installed'])
+					foreach ($module_list[$module_name]['dependencies'] as $one_dep)
 					{
-						$module_list[$module_name]['can_uninstall'] = false;
+						$dep_mod = $module_list[$one_dep['name']];
+						self::checkUninstall($one_dep['name'], $module_list);
+
+						if ($dep_mod && $dep_mod['installed'])
+						{
+							$module_list[$module_name]['can_uninstall'] = false;
+						}
 					}
-				}
-			}
-		}
-	}
-	
-	public static function checkCoreVersion(&$module_list)
-	{
-		foreach ($module_list as &$one_module)
-		{
-			if (isset($one_module['minimum_core_version']))
-			{
-				if (version_compare($one_module['minimum_core_version'], CMS_VERSION, '>'))
-				{
-					$one_module['meets_minimum_core'] = false;
-					$one_module['active'] = false;
 				}
 			}
 		}
@@ -196,21 +167,13 @@ class ModuleLoader extends \silk\core\Object
 			
 			if (isset($module_list[$module_name]['dependencies']) && is_array($module_list[$module_name]['dependencies']))
 			{
-				//Hack for handling 1 module dependency
-				if (isset($module_list[$module_name]['dependencies']['module']))
-				{
-					$tmp = $module_list[$module_name]['dependencies']['module'];
-					unset($module_list[$module_name]['dependencies']['module']);
-					$module_list[$module_name]['dependencies'][0]['module'] = $tmp;
-				}
-				
 				for ($i = 0; $i < count($module_list[$module_name]['dependencies']); $i++)
 				{
 					//If a module dependency (only kind for now)
-					if (isset($module_list[$module_name]['dependencies'][$i]['module']))
+					if (isset($module_list[$module_name]['dependencies'][$i]))
 					{
-						$one_dep = $module_list[$module_name]['dependencies'][$i]['module'];
-					
+						$one_dep = $module_list[$module_name]['dependencies'][$i];
+
 						//Does this dependency exist at all?
 						if (isset($module_list[$one_dep['name']]))
 						{
@@ -386,7 +349,6 @@ class ModuleLoader extends \silk\core\Object
 		$module_data['active'] = false;
 		$module_data['installed_version'] = $module_data['version'];
 		$module_data['needs_upgrade'] = false;
-		$module_data['meets_minimum_core'] = true;
 		
 		foreach($installed_data as $one_row)
 		{
@@ -418,66 +380,11 @@ class ModuleLoader extends \silk\core\Object
 			}
 		}
 		
-		$yml = CmsYaml::loadFile($file);
+		$yml = \silk\format\Yaml::loadFile($file);
 		
 		$cache->save('module_metadata:' . str_replace('.info.yml', '', basename($file)), array($yml, $file_mod_time));
 		
 		return $yml;
-	}
-	
-	public static function xmlifyModuleInfoFile($file)
-	{
-		$cache = get('cache');
-		$file_mod_time = filemtime($file);
-
-		if ($cache->contains('module_metadata:' . str_replace('.info.xml', '', basename($file))))
-		{
-			list($ary, $db_mod_time) = $cache->fetch('module_metadata:' . str_replace('.info.xml', '', basename($file)));
-			
-			if ($db_mod_time != null && $file_mod_time <= $db_mod_time)
-			{
-				if ($ary)
-					return $ary;
-			}
-		}
-		
-		$xml = simplexml_load_file($file);
-		$xml = self::convertXmlToArray($xml);
-		
-		$cache->save('module_metadata:' . str_replace('.info.xml', '', basename($file)), array($xml, $file_mod_time));
-		
-		return $xml;
-	}
-	
-	public static function convertXmlToArray($xml)
-	{
-		if (!($xml->children()))
-		{
-			$str = (string)$xml;
-			if ($str == 'false' || $str == 'true')
-			{
-				return ($str == 'true' ? true : false);
-			}
-			else
-			{
-				return $str;
-			}
-		}
-		
-		foreach ($xml->children() as $child)
-		{
-			$name = $child->getName();
-			if (count($xml->$name) == 1)
-			{
-				$element[$name] = self::convertXmlToArray($child);
-			}
-			else
-			{
-				$element[][$name] = self::convertXmlToArray($child);
-			}
-		}
-		
-		return $element;
 	}
 	
 	public static function findModuleInfoFiles()
@@ -496,14 +403,10 @@ class ModuleLoader extends \silk\core\Object
 						$mod_dir = joinPath($dir, $file);
 						if (is_dir($mod_dir))
 						{
-							$mod_info_file = joinPath($dir, $file, $file . '.info');
+							$mod_info_file = joinPath($dir, $file, 'module.info');
 							if (is_file($mod_info_file . '.yml') && is_readable($mod_info_file . '.yml'))
 							{
 								$filelist[] = $mod_info_file . '.yml';
-							}
-							else if (is_file($mod_info_file . '.xml') && is_readable($mod_info_file . '.xml'))
-							{
-								$filelist[] = $mod_info_file . '.xml';
 							}
 						}
 					}
@@ -517,7 +420,7 @@ class ModuleLoader extends \silk\core\Object
 
 	function install($name)
 	{
-		if (self::getModuleInfo($name) !== false && !self::getModuleInfo($name, 'installed'))
+		if (self::getModuleInfo($name) !== false && !self::getModuleInfo($name, 'installed') && self::getModuleInfo($name, 'meets_dependencies'))
 		{
 			$version = self::getModuleInfo($name, 'version');
 
@@ -541,7 +444,7 @@ class ModuleLoader extends \silk\core\Object
 
 	function uninstall($name)
 	{
-		if (self::getModuleInfo($name) !== false && self::getModuleInfo($name, 'installed'))
+		if (self::getModuleInfo($name) !== false && self::getModuleInfo($name, 'installed') && self::getModuleInfo($name, 'can_uninstall'))
 		{
 			$version = self::getModuleInfo($name, 'installed_version');
 
