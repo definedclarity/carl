@@ -60,6 +60,12 @@ class ModuleLoader extends \silk\core\Object
 		
 		self::$module_list = $module_list;
 	}
+
+	public static function unloadModuleData()
+	{
+		self::$module_list = null;
+		self::$event_lookup = array();
+	}
 	
 	public static function registerPlugins(&$module_list)
 	{

@@ -24,6 +24,5 @@
 // THE SOFTWARE.
 
 \carl\core\ModuleLoader::loadModuleData();
-var_dump(\carl\core\ModuleLoader::getModuleList());
 
 # vim:ts=4 sw=4 noet
