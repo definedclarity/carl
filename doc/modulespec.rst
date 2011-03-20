@@ -22,6 +22,13 @@ module.uninstall.php
     etc should be done here so that the system is clean after the module is
     removed.
 
+module.init.php
+    A file containing all of the functions necessary to initialize the module.
+    Things like initializing data, clearing caches, etc would go here. If the
+    module is installed and active, this file will be loaded and ran, so make
+    sure it's functionality is kept to a minimum, so that it doesn't affect
+    every request's performance.
+
 module.routes.php
     A file that defines the routes used by this module. Only necessary if the
     module has controllers and views that need to be displayed. If the file

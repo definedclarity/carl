@@ -1,5 +1,5 @@
 name: Test
-version: 1.0
+version: "1.0"
 summary: Does some test things that are really awesome.
 authors:
     - name: Ted Kulp

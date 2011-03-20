@@ -37,9 +37,9 @@ class ModuleLoader extends \silk\core\Object
 		parent::__construct();
 	}
 	
-	public static function loadModuleData()
+	public static function loadModuleData($module_dir = '')
 	{
-		$files = self::findModuleInfoFiles();
+		$files = self::findModuleInfoFiles($module_dir);
 		$installed_data = self::getInstalledModuleDetails();
 		$module_list = array();
 		foreach ($files as $one_file)
@@ -352,10 +352,10 @@ class ModuleLoader extends \silk\core\Object
 		
 		foreach($installed_data as $one_row)
 		{
-			if ($one_row['module_name'] == $module_data['name'])
+			if ($one_row['name'] == $module_data['name'])
 			{
 				$module_data['installed'] = true;
-				$module_data['active'] = ($one_row['active'] == '1' ? true : false);
+				$module_data['active'] = $one_row['active'];
 				$module_data['installed_version'] = $one_row['version'];
 				$module_data['needs_upgrade'] = version_compare($module_data['installed_version'], $one_row['version'], '<');
 			}
@@ -387,11 +387,14 @@ class ModuleLoader extends \silk\core\Object
 		return $yml;
 	}
 	
-	public static function findModuleInfoFiles()
+	public static function findModuleInfoFiles($module_dir = '')
 	{
 		$filelist = array();
 		
-		$dir = joinPath(ROOT_DIR, 'modules');
+		$dir = joinPath(ROOT_DIR, 'vendor', 'modules');
+		if ($module_dir != '')
+			$dir = $module_dir;
+
 		if (is_dir($dir))
 		{
 			if ($dh = opendir($dir))
@@ -420,7 +423,7 @@ class ModuleLoader extends \silk\core\Object
 
 	function install($name)
 	{
-		if (self::getModuleInfo($name) !== false && !self::getModuleInfo($name, 'installed') && self::getModuleInfo($name, 'meets_dependencies'))
+		if (self::getModuleInfo($name) !== false && !self::isInstalled($name) && self::getModuleInfo($name, 'meets_dependencies'))
 		{
 			$version = self::getModuleInfo($name, 'version');
 
@@ -444,7 +447,7 @@ class ModuleLoader extends \silk\core\Object
 
 	function uninstall($name)
 	{
-		if (self::getModuleInfo($name) !== false && self::getModuleInfo($name, 'installed') && self::getModuleInfo($name, 'can_uninstall'))
+		if (self::getModuleInfo($name) !== false && self::isInstalled($name) && self::getModuleInfo($name, 'can_uninstall'))
 		{
 			$version = self::getModuleInfo($name, 'installed_version');
 
@@ -459,16 +462,18 @@ class ModuleLoader extends \silk\core\Object
 
 			$module_obj = ModuleMetadata::findOneBy(array('name' => $name));
 			if ($module_obj)
+			{
 				$module_obj->delete();
 
-			$event_params = array('name' => $name, 'version' => $version);
-			\silk\core\EventManager::sendEvent('carl:module:uninstalled', $event_params);
+				$event_params = array('name' => $name, 'version' => $version);
+				\silk\core\EventManager::sendEvent('carl:module:uninstalled', $event_params);
+			}
 		}
 	}
 
 	function upgrade($name)
 	{
-		if (self::getModuleInfo($name) !== false && self::getModuleInfo($name, 'installed') && self::getModuleInfo($name, 'needs_upgrade'))
+		if (self::getModuleInfo($name) !== false && self::isInstalled($name) && self::getModuleInfo($name, 'needs_upgrade'))
 		{
 			$old_version = self::getModuleInfo($name, 'installed_version');
 			$new_version = self::getModuleInfo($name, 'version');
@@ -485,38 +490,44 @@ class ModuleLoader extends \silk\core\Object
 			$module_obj = ModuleMetadata::findOneBy(array('name' => $name));
 			if ($module_obj)
 			{
-				$module_obj->version = $new_version;
+				$module_obj['version'] = $new_version;
 				$module_obj->save();
-			}
 
-			$event_params = array('name' => $name, 'old_version' => $old_version, 'new_version' => $new_version);
-			\silk\core\EventManager::sendEvent('carl:module:upgraded', $event_params);
+				$event_params = array('name' => $name, 'old_version' => $old_version, 'new_version' => $new_version);
+				\silk\core\EventManager::sendEvent('carl:module:upgraded', $event_params);
+			}
 		}
 	}
 
 
 	function activate($name)
 	{
-		if (self::getModuleInfo($name) !== false && self::getModuleInfo($name, 'installed') && !self::getModuleInfo($name, 'active'))
+		if (self::getModuleInfo($name) !== false && self::isInstalled($name) && !self::getModuleInfo($name, 'active'))
 		{
 			$module_obj = ModuleMetadata::findOneBy(array('name' => $name));
 			if ($module_obj)
 			{
-				$module_obj->active = true;
+				$module_obj['active'] = true;
 				$module_obj->save();
+
+				$event_params = array('name' => $name);
+				\silk\core\EventManager::sendEvent('carl:module:activated', $event_params);
 			}
 		}
 	}
 
 	function deactivate($name)
 	{
-		if (self::getModuleInfo($name) !== false && self::getModuleInfo($name, 'installed') && self::getModuleInfo($name, 'active'))
+		if (self::getModuleInfo($name) !== false && self::isInstalled($name) && self::getModuleInfo($name, 'active'))
 		{
 			$module_obj = ModuleMetadata::findOneBy(array('name' => $name));
 			if ($module_obj)
 			{
-				$module_obj->active = false;
+				$module_obj['active'] = false;
 				$module_obj->save();
+
+				$event_params = array('name' => $name);
+				\silk\core\EventManager::sendEvent('carl:module:deactivated', $event_params);
 			}
 		}
 	}
