@@ -103,26 +103,40 @@ class ModuleLoader extends \silk\core\Object
 			{
 				foreach ($one_module['events_watched'] as $event_name)
 				{
-					\silk\core\EventManager::registerEventHandler($event_name, '\carl\ModuleLoader::eventProxy');
+					\silk\core\EventManager::registerEventHandler($event_name, '\carl\core\ModuleLoader::eventProxy');
 					self::$event_lookup[$event_name][] = $one_module['name'];
 				}
 			}
 		}
 	}
 	
-	public static function eventProxy($event_name, $params)
+	public static function eventProxy($event_name, &$params)
 	{
 		if (isset(self::$event_lookup[$event_name]) && is_array(self::$event_lookup[$event_name]))
 		{
 			foreach (self::$event_lookup[$event_name] as $module_name)
 			{
-				/*
-				$obj = self::getModuleClass($module_name);
-				if (is_object($obj))
+				$filename = self::getModuleFile($module_name, 'EventHandler.php');
+				if ($filename)
 				{
-					$obj->doEvent($event_name, $params);
+					{
+						//We don't check the result -- we just run it and hope it doesn't crash
+						$class_name = joinNamespace(self::getModuleInfo($module_name, 'namespace'), 'EventHandler');
+						if (!class_exists($class_name))
+						{
+							@include($filename);
+						}
+
+						if (class_exists($class_name))
+						{
+							$class = new $class_name;
+							if ($class)
+							{
+								$class->handleEvent($event_name, $params);
+							}
+						}
+					}
 				}
-				*/
 			}
 		}
 	}

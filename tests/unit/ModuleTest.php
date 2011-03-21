@@ -154,6 +154,30 @@ class ModuleTest extends TestCase
 		ModuleLoader::uninstall('Test');
 		$this->reloadModules();
 	}
+
+	public function testModuleLazyLoadEventWatcher()
+	{
+		$cache = get('cache');
+
+		//Just in case
+		$cache->delete('event_test_thing');
+		$this->assertFalse($cache->contains('event_test_thing'));
+
+		ModuleLoader::install('Test');
+		$this->reloadModules();
+
+		$my_value = 'my_value_here_too';
+		$event_params = array('my_value' => $my_value);
+		\silk\core\EventManager::sendEvent('some_module:some_event', $event_params);
+		$this->assertTrue($cache->contains('event_test_thing'));
+		$this->assertEquals($my_value, $cache->fetch('event_test_thing'));
+
+		ModuleLoader::uninstall('Test');
+		$this->reloadModules();
+
+		$cache->delete('event_test_thing');
+		$this->assertFalse($cache->contains('event_test_thing'));
+	}
 }
 
 # vim:ts=4 sw=4 noet

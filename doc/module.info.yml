@@ -1,4 +1,5 @@
 name: Test
+namespace: \awesome_modules\Test
 version: "1.0"
 summary: Does some test things that are really awesome.
 authors:

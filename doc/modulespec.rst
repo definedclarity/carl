@@ -43,7 +43,7 @@ RequestHandler.php
     return an array of status code, header strings and body strings. If not,
     it can defer the call to the next request_handler in line. This class
     should extend \car\core\RequestHandler and live in the module's base
-    namepsace.
+    namepsace (as defined in the module.info.yml file).
 
     See doc/RequestHandler.php.txt for an example RequestHandler.
 
@@ -51,7 +51,7 @@ EventHandler.php
     If the module has defined itself to watch for events, then this class
     will be instantiated and called on for any fired event it's watching out
     for.  This class should extend \carl\core\EventHandler and live in the
-    module's base namespace.
+    module's base namespace (as defined in the module.info.yml file).
 
     See doc/EventHandler.php.txt for an example EventHandler.
 
@@ -59,7 +59,8 @@ PluginHandler.php
     If the module has defined itself as having plugins with callbacks, then
     this class will be instantiated and called on for any use of that plugin
     in Smarty templates. This class should extend \carl\core\PluginHandler
-    and live in the module's base namespace.
+    and live in the module's base namespace (as defined in the module.info.yml
+    file).
 
     See doc/PluginHandler.php.txt for an example PluginHandler.
 
