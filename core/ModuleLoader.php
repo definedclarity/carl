@@ -60,6 +60,8 @@ class ModuleLoader extends \silk\core\Object
 		self::registerEventHandlers($module_list);
 		
 		self::$module_list = $module_list;
+
+		self::initInstalledModules();
 	}
 
 	public static function unloadModuleData()
@@ -512,6 +514,22 @@ class ModuleLoader extends \silk\core\Object
 				{
 					$event_params = array('name' => $name);
 					\silk\core\EventManager::sendEvent('carl:module:deactivated', $event_params);
+				}
+			}
+		}
+	}
+
+	function initInstalledModules($include_file = 'module.init.php')
+	{
+		$modules = self::getModuleList(true);
+		foreach ($modules as $one_module)
+		{
+			$filename = self::getModuleFile($one_module['name'], $include_file);
+			if ($filename)
+			{
+				{
+					//We don't check the result -- we just run it and hope it doesn't crash
+					@include($filename);
 				}
 			}
 		}

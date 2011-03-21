@@ -138,6 +138,22 @@ class ModuleTest extends TestCase
 		//Just in case
 		$cache->delete('install_test_thing');
 	}
+
+	public function testModuleInit()
+	{
+		$cache = get('cache');
+
+		//Just in case
+		$cache->delete('init_test_thing');
+		$this->assertFalse($cache->contains('init_test_thing'));
+
+		ModuleLoader::install('Test');
+		$this->reloadModules();
+		$this->assertTrue($cache->contains('init_test_thing'));
+
+		ModuleLoader::uninstall('Test');
+		$this->reloadModules();
+	}
 }
 
 # vim:ts=4 sw=4 noet
