@@ -25,6 +25,8 @@
 
 if (!defined('ROOT_DIR')) die();
 
-\carl\core\ModuleLoader::loadModuleData();
+$cache = get('cache');
+
+$cache->save('install_test_thing', 'has_some_value');
 
 # vim:ts=4 sw=4 noet

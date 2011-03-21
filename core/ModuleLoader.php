@@ -51,6 +51,7 @@ class ModuleLoader extends \silk\core\Object
 			
 			$module_data = self::injectInstalledDataForModule($module_data, $installed_data);
 			$module_list[$module_data['name']] = $module_data;
+			$module_list[$module_data['name']]['module_file'] = $one_file;
 		}
 		
 		self::checkDependencies($module_list);
@@ -246,54 +247,7 @@ class ModuleLoader extends \silk\core\Object
 			return $modules;
 		}
 	}
-	
-	public static function getModuleClass($name, $check_active = true, $check_deps = true)
-	{
-		if (self::$module_list != null)
-		{
-			//Make sure we can call modules without checking case
-			$name = self::getProperModuleCase($name);
-			
-			if (isset(self::$module_list[$name]))
-			{
-				if ($check_active)
-				{
-					if (self::$module_list[$name]['active'] != true || self::$module_list[$name]['installed'] != true)
-					{
-						return null;
-					}
-				}
-				
-				if (isset(self::$module_list[$name]['object']))
-				{
-					return self::$module_list[$name]['object'];
-				}
-				else
-				{
-					require_once(joinPath(ROOT_DIR, 'modules', $name, $name . '.module.php'));
-					if (class_exists($name) && (is_subclass_of($name, 'CmsModuleBase') || is_subclass_of($name, 'CmsModule')))
-					{
-						if ($check_deps && isset(self::$module_list[$name]['dependencies']))
-						{
-							foreach (self::$module_list[$name]['dependencies'] as $dep)
-							{
-								//If the dependency doesn't load, this one doesn't either.
-								if (self::getModuleClass($dep['module']['name'], $check_active) == null)
-									return null;
-							}
-						}
-						
-						self::$module_list[$name]['object'] = new $name();
-						
-						return self::$module_list[$name]['object'];
-					}
-				}
-			}
-		}
-		
-		return null;
-	}
-	
+
 	public static function getModuleInfo($name, $key = '')
 	{
 		if ($key != '')
@@ -308,6 +262,29 @@ class ModuleLoader extends \silk\core\Object
 		}
 		
 		return false;
+	}
+
+	public static function getModuleDirectory($name)
+	{
+		$dir = self::getModuleInfo($name, 'module_file');
+		if (!$dir)
+			$dir = '';
+		return dirname($dir);
+	}
+	
+	public static function getModuleFile($name, $filename = '')
+	{
+		$dir = self::getModuleDirectory($name);
+		if ($dir)
+		{
+			$filename = joinPath($dir, $filename);
+			if ($filename && is_file($filename))
+			{
+				return $filename;
+			}
+		}
+
+		return '';
 	}
 	
 	public static function isInstalled($name)
@@ -427,48 +404,57 @@ class ModuleLoader extends \silk\core\Object
 		return $filelist;
 	}
 
-	function install($name)
+	function install($name, $include_file = 'module.install.php')
 	{
 		if (self::getModuleInfo($name) !== false && !self::isInstalled($name) && self::getModuleInfo($name, 'meets_dependencies'))
 		{
 			$version = self::getModuleInfo($name, 'version');
 
-			/*
-			$filename = joinPath(ROOT_DIR, 'modules', $name, 'method.install.php');
-			if (@is_file($filename))
-			{
-				$module = self::getModuleClass($name, false, false);
-				$module->include_file_in_scope($filename);
-			}
-			*/
-
 			$module_obj = new ModuleMetadata();
 			$module_obj->fillParameters(array('name' => $name, 'version' => $version, 'active' => true));
-			$module_obj->save();
+			if ($module_obj->isValid())
+			{
+				//Do we have an install file?
+				$filename = self::getModuleFile($name, $include_file);
+				if ($filename)
+				{
+					{
+						//We don't check the result -- we just run it and hope it doesn't crash
+						@include($filename);
+					}
+				}
 
-			$event_params = array('name' => $name, 'version' => $version);
-			\silk\core\EventManager::sendEvent('carl:module:installed', $event_params);
+				//We made it this far -- call it installed
+				if ($module_obj->save())
+				{
+					$event_params = array('name' => $name, 'version' => $version);
+					\silk\core\EventManager::sendEvent('carl:module:installed', $event_params);
+				}
+			}
 		}
 	}
 
-	function uninstall($name)
+	function uninstall($name, $include_file = 'module.uninstall.php')
 	{
 		if (self::getModuleInfo($name) !== false && self::isInstalled($name) && self::getModuleInfo($name, 'can_uninstall'))
 		{
 			$version = self::getModuleInfo($name, 'installed_version');
 
-			/*
-			$filename = joinPath(ROOT_DIR, 'modules', $name, 'method.uninstall.php');
-			if (@is_file($filename))
-			{
-				$module = CmsModuleLoader::get_module_class($name, false, false);
-				$module->include_file_in_scope($filename);
-			}
-			*/
-
 			$module_obj = ModuleMetadata::findOneBy(array('name' => $name));
 			if ($module_obj)
 			{
+				//Do we have an uninstall file?
+				$filename = self::getModuleFile($name, $include_file);
+				if ($filename)
+				{
+					{
+						//We don't check the result -- we just run it and hope it doesn't crash
+						@include($filename);
+					}
+				}
+
+				//Doctrine doesn't tell us if the delete was a success, so we assume
+				//that it was -- we know the object is there.
 				$module_obj->delete();
 
 				$event_params = array('name' => $name, 'version' => $version);
@@ -484,27 +470,18 @@ class ModuleLoader extends \silk\core\Object
 			$old_version = self::getModuleInfo($name, 'installed_version');
 			$new_version = self::getModuleInfo($name, 'version');
 
-			/*
-			$filename = joinPath(ROOT_DIR, 'modules', $name, 'method.upgrade.php');
-			if (@is_file($filename))
-			{
-				$module = self::getModuleClass($name, false, false);
-				$module->include_file_in_scope($filename);
-			}
-			*/
-
 			$module_obj = ModuleMetadata::findOneBy(array('name' => $name));
 			if ($module_obj)
 			{
 				$module_obj['version'] = $new_version;
-				$module_obj->save();
-
-				$event_params = array('name' => $name, 'old_version' => $old_version, 'new_version' => $new_version);
-				\silk\core\EventManager::sendEvent('carl:module:upgraded', $event_params);
+				if ($module_obj->save())
+				{
+					$event_params = array('name' => $name, 'old_version' => $old_version, 'new_version' => $new_version);
+					\silk\core\EventManager::sendEvent('carl:module:upgraded', $event_params);
+				}
 			}
 		}
 	}
-
 
 	function activate($name)
 	{
@@ -514,10 +491,11 @@ class ModuleLoader extends \silk\core\Object
 			if ($module_obj)
 			{
 				$module_obj['active'] = true;
-				$module_obj->save();
-
-				$event_params = array('name' => $name);
-				\silk\core\EventManager::sendEvent('carl:module:activated', $event_params);
+				if ($module_obj->save())
+				{
+					$event_params = array('name' => $name);
+					\silk\core\EventManager::sendEvent('carl:module:activated', $event_params);
+				}
 			}
 		}
 	}
@@ -530,10 +508,11 @@ class ModuleLoader extends \silk\core\Object
 			if ($module_obj)
 			{
 				$module_obj['active'] = false;
-				$module_obj->save();
-
-				$event_params = array('name' => $name);
-				\silk\core\EventManager::sendEvent('carl:module:deactivated', $event_params);
+				if ($module_obj->save())
+				{
+					$event_params = array('name' => $name);
+					\silk\core\EventManager::sendEvent('carl:module:deactivated', $event_params);
+				}
 			}
 		}
 	}

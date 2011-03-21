@@ -116,6 +116,28 @@ class ModuleTest extends TestCase
 		ModuleLoader::uninstall('Test');
 		$this->reloadModules();
 	}
+
+	public function testInstallUninstallFiles()
+	{
+		$cache = get('cache');
+
+		//Just in case
+		$cache->delete('install_test_thing');
+		$this->assertFalse($cache->contains('install_test_thing'));
+
+		//Install file sets the thing in the cache
+		ModuleLoader::install('Test');
+		$this->reloadModules();
+		$this->assertTrue($cache->contains('install_test_thing'));
+
+		//Uninstall file removes the thing from the cache
+		ModuleLoader::uninstall('Test');
+		$this->reloadModules();
+		$this->assertfalse($cache->contains('install_test_thing'));
+
+		//Just in case
+		$cache->delete('install_test_thing');
+	}
 }
 
 # vim:ts=4 sw=4 noet
