@@ -53,7 +53,9 @@ EventHandler.php
     for.  This class should extend \carl\core\EventHandler and live in the
     module's base namespace (as defined in the module.info.yml file).
 
-    See doc/EventHandler.php.txt for an example EventHandler.
+    See doc/EventHandler.php.txt for an example EventHandler. See the
+    "events/" directory description below for an alternate way to handle
+    event handlers.
 
 PluginHandler.php
     If the module has defined itself as having plugins with callbacks, then
@@ -83,6 +85,14 @@ plugins/
     If your module has defined any plugins that aren't callbacks, they should
     be placed here. Plugins are defined using standard Smarty plugin
     conventions and will only work on Smarty enabled templates/output.
+
+events/
+    Event handlers can also be put into individual files named by the name of
+    the event they're listening for. For every : in the event name, that will
+    look in the directory for it instead. So, for example, if you're listening
+    for event "some_module:some_event", the system will look for a file named
+    "events/some_module/some_event.php" and include that. $params will already
+    be in scope for you to use when the file is included.
 
 tests/
     If this module has a test suite, those tests should be placed in this

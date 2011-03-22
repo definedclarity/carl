@@ -23,22 +23,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-namespace carl\core;
+namespace carl\test\modules\Test;
 
-class EventHandler extends \silk\core\Object
+if (!defined('ROOT_DIR')) die();
+
+$cache = get('cache');
+if (isset($params['my_value']))
 {
-	public function handleEvent($event_name, &$params)
-	{
-		//Split the event out into filename of some sort
-		$event_filename = str_replace(':', DS, $event_name) . '.php';
-		$filename = ModuleLoader::getModuleFile($params['__calling_event_module__'], joinPath('events', $event_filename));
-		if ($filename)
-		{
-			{
-				@include($filename);
-			}
-		}
-	}
+	$cache->save('event_test_other_thing', $params['my_value']);
 }
 
 # vim:ts=4 sw=4 noet

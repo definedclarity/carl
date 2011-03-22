@@ -12,6 +12,7 @@ events_watched:
     - core:module:installed
     - core:module:uninstalled
     - some_module:some_event
+    - some_module:some_separate_event
 events_sent:
     - some_event
     - some_other_event

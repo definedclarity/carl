@@ -31,6 +31,8 @@ class EventHandler extends \carl\core\EventHandler
 {
 	public function handleEvent($event_name, &$params)
 	{
+		parent::handleEvent($event_name, $params);
+
 		if ($event_name == 'some_module:some_event')
 		{
 			$cache = get('cache');

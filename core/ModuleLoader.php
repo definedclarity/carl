@@ -116,6 +116,7 @@ class ModuleLoader extends \silk\core\Object
 		{
 			foreach (self::$event_lookup[$event_name] as $module_name)
 			{
+				$params['__calling_event_module__'] = $module_name;
 				$filename = self::getModuleFile($module_name, 'EventHandler.php');
 				if ($filename)
 				{
@@ -137,6 +138,7 @@ class ModuleLoader extends \silk\core\Object
 						}
 					}
 				}
+				unset($params['__calling_event_module__']);
 			}
 		}
 	}
