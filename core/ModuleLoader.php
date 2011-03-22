@@ -125,7 +125,7 @@ class ModuleLoader extends \silk\core\Object
 						$class_name = joinNamespace(self::getModuleInfo($module_name, 'namespace'), 'EventHandler');
 						if (!class_exists($class_name))
 						{
-							@include($filename);
+							@include_once($filename);
 						}
 
 						if (class_exists($class_name))
@@ -136,6 +136,14 @@ class ModuleLoader extends \silk\core\Object
 								$class->handleEvent($event_name, $params);
 							}
 						}
+					}
+				}
+				else
+				{
+					//They didn't make a specific EventHandler -- just call the core one and see
+					//if they used individual files instead.
+					{
+						\carl\core\EventHandler::handleEventStatic($event_name, $params);
 					}
 				}
 				unset($params['__calling_event_module__']);

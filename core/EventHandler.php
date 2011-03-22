@@ -29,6 +29,11 @@ class EventHandler extends \silk\core\Object
 {
 	public function handleEvent($event_name, &$params)
 	{
+		self::handleEventStatic($event_name, $params);
+	}
+
+	public function handleEventStatic($event_name, &$params)
+	{
 		//Split the event out into filename of some sort
 		$event_filename = str_replace(':', DS, $event_name) . '.php';
 		$filename = ModuleLoader::getModuleFile($params['__calling_event_module__'], joinPath('events', $event_filename));
