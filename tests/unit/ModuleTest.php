@@ -202,6 +202,19 @@ class ModuleTest extends TestCase
 		$cache->delete('event_test_other_thing');
 		$this->assertFalse($cache->contains('event_test_other_thing'));
 	}
+
+	public function testPluginRegistration()
+	{
+		ModuleLoader::install('Test');
+		$this->reloadModules();
+
+		$this->assertEquals("Default Handler Works!", smarty()->fetch('eval:{test_default_plugin}'));
+		$this->assertEquals("Physical Plugin Works!", smarty()->fetch('eval:{test_physical_plugin}'));
+		$this->assertEquals("Virtual Plugin Works!", smarty()->fetch('eval:{test_virtual_plugin}'));
+
+		ModuleLoader::uninstall('Test');
+		$this->reloadModules();
+	}
 }
 
 # vim:ts=4 sw=4 noet
