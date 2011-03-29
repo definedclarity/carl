@@ -31,6 +31,8 @@ class ModuleLoader extends \silk\core\Object
 {
 	public static $module_list = null;
 	public static $event_lookup = array();
+	public static $plugin_handlers = array();
+	public static $plugin_registrations = array();
 	
 	function __construct()
 	{
@@ -56,11 +58,11 @@ class ModuleLoader extends \silk\core\Object
 		
 		self::checkDependencies($module_list);
 		self::checkUninstallAll($module_list);
-		self::registerPlugins($module_list);
-		self::registerEventHandlers($module_list);
 		
 		self::$module_list = $module_list;
 
+		self::registerPlugins();
+		self::registerEventHandlers();
 		self::initInstalledModules();
 	}
 
@@ -68,36 +70,86 @@ class ModuleLoader extends \silk\core\Object
 	{
 		self::$module_list = null;
 		self::$event_lookup = array();
+		self::$plugin_handlers = array();
+		foreach (self::$plugin_registrations as $one)
+		{
+			smarty()->unregisterPlugin($one[0], $one[1]);
+		}
+		self::$plugin_registrations = array();
 	}
 	
-	public static function registerPlugins(&$module_list)
+	public static function registerPlugins()
 	{
-		foreach ($module_list as &$one_module)
+		$module_list = self::getModuleList(true);
+		foreach ($module_list as $one_module)
 		{
-			//self::check_uninstall($one_module['name'], $module_list);
+			$dir = joinPath(self::getModuleDirectory($one_module['name']), 'plugins');
+			if (is_dir($dir))
+			{
+				if (!in_array($dir, smarty()->plugins_dir))
+				{
+					smarty()->plugins_dir[] = $dir;
+				}
+			}
 			if (isset($one_module['plugins']))
 			{
-				foreach ($one_module['plugins'] as $k => $v)
+				foreach ($one_module['plugins'] as $val)
 				{
-					if (isset($v['plugin']))
+					if (isset($val['name']))
 					{
-						$val = $v['plugin'];
-						if (isset($val['name']))
-						{
-							if (isset($val['callback']))
-								CmsModuleFunctionProxy::getInstance()->register($one_module['name'], $val['name'], $val['callback']);
-							else
-								CmsModuleFunctionProxy::getInstance()->register($one_module['name'], $val['name'], 'function_plugin');
-						}
+						$type = 'function';
+						if (isset($val['type']))
+							$type = $val['type'];
+
+						self::$plugin_registrations[] = array($type, $val['name']);
+
+						if (isset($val['callback']))
+							PluginProxy::getInstance()->register($one_module['name'], $type, $val['name'], $val['callback']);
+						else
+							PluginProxy::getInstance()->register($one_module['name'], $type, $val['name']);
 					}
 				}
 			}
 		}
 	}
-	
-	public static function registerEventHandlers(&$module_list)
+
+	public static function getPluginHandler($module_name)
 	{
-		foreach ($module_list as &$one_module)
+		if (in_array($module_name, self::$plugin_handlers))
+		{
+			return self::$plugin_handlers[$module_name];
+		}
+
+		$filename = self::getModuleFile($module_name, 'PluginHandler.php');
+		if ($filename)
+		{
+			{
+				//We don't check the result -- we just run it and hope it doesn't crash
+				$class_name = joinNamespace(self::getModuleInfo($module_name, 'namespace'), 'PluginHandler');
+				if (!class_exists($class_name))
+				{
+					include_once($filename);
+				}
+
+				if (class_exists($class_name))
+				{
+					$class = new $class_name;
+					if ($class)
+					{
+						self::$plugin_handlers[$module_name] = $class;
+						return $class;
+					}
+				}
+			}
+		}
+
+		return null;
+	}
+	
+	public static function registerEventHandlers()
+	{
+		$module_list = self::getModuleList(true);
+		foreach ($module_list as $one_module)
 		{
 			if (isset($one_module['events_watched']))
 			{
@@ -301,7 +353,7 @@ class ModuleLoader extends \silk\core\Object
 	public static function getModuleFile($name, $filename = '')
 	{
 		$dir = self::getModuleDirectory($name);
-		if ($dir)
+		if ($dir != '')
 		{
 			$filename = joinPath($dir, $filename);
 			if ($filename && is_file($filename))
