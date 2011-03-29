@@ -82,9 +82,9 @@ controllers/
     any differently in this context.
 
 plugins/
-    If your module has defined any plugins that aren't callbacks, they should
-    be placed here. Plugins are defined using standard Smarty plugin
-    conventions and will only work on Smarty enabled templates/output.
+    If this directory exists and the module is installed and active, this
+    directory will be added to smarty's list of plugin directories. This means
+    all valid smarty plugins in this directory will "just work".
 
 events/
     Event handlers can also be put into individual files named by the name of
