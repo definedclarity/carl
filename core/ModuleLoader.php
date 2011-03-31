@@ -25,6 +25,7 @@
 
 namespace carl\core;
 
+use \carl\exceptions\LoaderException;
 use \carl\models\ModuleMetadata;
 
 class ModuleLoader extends \silk\core\Object
@@ -55,7 +56,7 @@ class ModuleLoader extends \silk\core\Object
 			$module_list[$module_data['name']] = $module_data;
 			$module_list[$module_data['name']]['module_file'] = $one_file;
 		}
-		
+
 		self::checkDependencies($module_list);
 		self::checkUninstallAll($module_list);
 		
@@ -496,9 +497,13 @@ class ModuleLoader extends \silk\core\Object
 				$filename = self::getModuleFile($name, $include_file);
 				if ($filename)
 				{
+					try
 					{
-						//We don't check the result -- we just run it and hope it doesn't crash
 						@include($filename);
+					}
+					catch (\Exception $e)
+					{
+						throw new LoaderException($include_file . ' failed to load');
 					}
 				}
 
@@ -507,9 +512,32 @@ class ModuleLoader extends \silk\core\Object
 				{
 					$event_params = array('name' => $name, 'version' => $version);
 					\silk\core\EventManager::sendEvent('carl:module:installed', $event_params);
+
+					return true;
+				}
+				else
+				{
+					throw new LoaderException('Could not save module metadata');
 				}
 			}
 		}
+		else
+		{
+			if (self::getModuleInfo($name) === false)
+			{
+				throw new LoaderException('Module doesn\'t exist');
+			}
+			else if (self::isInstalled($name))
+			{
+				throw new LoaderException('Module is already installed');
+			}
+			else
+			{
+				throw new LoaderException('Module does not meet dependencies');
+			}
+		}
+
+		return false;
 	}
 
 	function uninstall($name, $include_file = 'module.uninstall.php')
@@ -525,9 +553,13 @@ class ModuleLoader extends \silk\core\Object
 				$filename = self::getModuleFile($name, $include_file);
 				if ($filename)
 				{
+					try
 					{
-						//We don't check the result -- we just run it and hope it doesn't crash
 						@include($filename);
+					}
+					catch (\Exception $e)
+					{
+						throw new LoaderException($include_file . ' failed to load');
 					}
 				}
 
@@ -537,8 +569,27 @@ class ModuleLoader extends \silk\core\Object
 
 				$event_params = array('name' => $name, 'version' => $version);
 				\silk\core\EventManager::sendEvent('carl:module:uninstalled', $event_params);
+
+				return true;
 			}
 		}
+		else
+		{
+			if (self::getModuleInfo($name) === false)
+			{
+				throw new LoaderException('Module doesn\'t exist');
+			}
+			else if (!self::isInstalled($name))
+			{
+				throw new LoaderException('Module is not installed');
+			}
+			else
+			{
+				throw new LoaderException('Module cannot be uninstalled');
+			}
+		}
+
+		return false;
 	}
 
 	function upgrade($name)
@@ -556,9 +607,13 @@ class ModuleLoader extends \silk\core\Object
 				{
 					$event_params = array('name' => $name, 'old_version' => $old_version, 'new_version' => $new_version);
 					\silk\core\EventManager::sendEvent('carl:module:upgraded', $event_params);
+
+					return true;
 				}
 			}
 		}
+
+		return false;
 	}
 
 	function activate($name)
@@ -573,9 +628,13 @@ class ModuleLoader extends \silk\core\Object
 				{
 					$event_params = array('name' => $name);
 					\silk\core\EventManager::sendEvent('carl:module:activated', $event_params);
+
+					return true;
 				}
 			}
 		}
+
+		return false;
 	}
 
 	function deactivate($name)
@@ -590,9 +649,13 @@ class ModuleLoader extends \silk\core\Object
 				{
 					$event_params = array('name' => $name);
 					\silk\core\EventManager::sendEvent('carl:module:deactivated', $event_params);
+
+					return true;
 				}
 			}
 		}
+
+		return false;
 	}
 
 	function initInstalledModules($include_file = 'module.init.php')

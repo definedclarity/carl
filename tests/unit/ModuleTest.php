@@ -61,7 +61,11 @@ class ModuleTest extends TestCase
 		$this->assertTrue(ModuleLoader::isInstalled('Test'));
 
 		//Make sure it can't be reinstalled
-		ModuleLoader::install('Test');
+		try
+		{
+			ModuleLoader::install('Test');
+		}
+		catch (\carl\exceptions\LoaderException $e) {}
 		$this->reloadModules();
 
 		$all = ModuleMetadata::findAll();
@@ -90,7 +94,11 @@ class ModuleTest extends TestCase
 		$this->assertFalse(ModuleLoader::isInstalled('Test'));
 
 		//Make sure it cleanly doesn't try to re-uninstall
-		ModuleLoader::uninstall('Test');
+		try
+		{
+			ModuleLoader::uninstall('Test');
+		}
+		catch (\carl\exceptions\LoaderException $e) {}
 		$this->reloadModules();
 
 		$all = ModuleMetadata::findAll();
