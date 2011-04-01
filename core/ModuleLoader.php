@@ -431,9 +431,9 @@ class ModuleLoader extends \silk\core\Object
 		$cache = get('cache');
 		$file_mod_time = filemtime($file);
 
-		if ($cache->contains('module_metadata:' . str_replace('.info.yml', '', basename($file))))
+		if ($cache->contains('module_metadata:' . md5($file)));
 		{
-			list($ary, $db_mod_time) = $cache->fetch('module_metadata:' . str_replace('.info.yml', '', basename($file)));
+			list($ary, $db_mod_time) = $cache->fetch('module_metadata:' . md5($file));
 			
 			if ($db_mod_time != null && $file_mod_time <= $db_mod_time)
 			{
@@ -444,7 +444,7 @@ class ModuleLoader extends \silk\core\Object
 		
 		$yml = \silk\format\Yaml::loadFile($file);
 		
-		$cache->save('module_metadata:' . str_replace('.info.yml', '', basename($file)), array($yml, $file_mod_time));
+		$cache->save('module_metadata:' . md5($file), array($yml, $file_mod_time));
 		
 		return $yml;
 	}
@@ -459,27 +459,16 @@ class ModuleLoader extends \silk\core\Object
 
 		if (is_dir($dir))
 		{
-			if ($dh = opendir($dir))
+			$ite=new \RecursiveDirectoryIterator($dir);
+			foreach (new \RecursiveIteratorIterator($ite) as $filename => $cur)
 			{
-				while (($file = readdir($dh)) !== false)
+				if (basename($filename) == 'module.info.yml' && is_readable($filename))
 				{
-					if ($file != '.' && $file != '..')
-					{
-						$mod_dir = joinPath($dir, $file);
-						if (is_dir($mod_dir))
-						{
-							$mod_info_file = joinPath($dir, $file, 'module.info');
-							if (is_file($mod_info_file . '.yml') && is_readable($mod_info_file . '.yml'))
-							{
-								$filelist[] = $mod_info_file . '.yml';
-							}
-						}
-					}
+					$filelist[] = $filename;
 				}
-				closedir($dh);
 			}
 		}
-		
+
 		return $filelist;
 	}
 

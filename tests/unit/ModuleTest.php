@@ -223,6 +223,15 @@ class ModuleTest extends TestCase
 		ModuleLoader::uninstall('Test');
 		$this->reloadModules();
 	}
+
+	public function testInstallingNestedDirModule()
+	{
+		ModuleLoader::install('Inside');
+		$this->reloadModules();
+
+		ModuleLoader::uninstall('Inside');
+		$this->reloadModules();
+	}
 }
 
 # vim:ts=4 sw=4 noet

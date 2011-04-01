@@ -1,0 +1,26 @@
+name: Inside
+namespace: \carl\test\modules\Inside
+version: "1.0"
+summary: "It's inside a directory. How quaint!"
+authors:
+    - name: Ted Kulp
+      email: ted@cmsmadesimple.org
+#dependencies:
+#    - name: Parent Module
+#      minimum_version: 1.0
+events_watched:
+    - core:module:installed
+    - core:module:uninstalled
+    - some_module:some_event
+    - some_module:some_separate_event
+events_sent:
+    - some_event
+    - some_other_event
+capabilities:
+    - parses_url
+    - does_something_cool
+plugins:
+    - name: test_virtual_plugin
+    - name: test_default_plugin
+auto_install: true
+auto_upgrade: true
