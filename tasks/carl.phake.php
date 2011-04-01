@@ -23,12 +23,26 @@
 
 group('carl', function()
 {
+	desc('Lists the modules we have access to');
+	task('list', function($app)
+	{
+		\carl\core\ModuleLoader::loadModuleData();
+		$list = \carl\core\ModuleLoader::getModuleList();
+		foreach ($list as $one_module)
+		{
+			echo "Name: {$one_module['name']} | ";
+			echo "Version: {$one_module['version']} | ";
+			echo "Installed/Active: " . ($one_module['installed']?'true':'false') . "/" . ($one_module['active']?'true':'false') . "\n";
+		}
+		echo "\n";
+	});
+
 	desc('Install a module');
 	task('install', function($app)
 	{
+		\carl\core\ModuleLoader::loadModuleData();
 		if (isset($app['arg0']))
 		{
-			\carl\core\ModuleLoader::loadModuleData(joinPath(dirname(dirname(__FILE__)), 'tests', 'modules'));
 			try
 			{
 				if (\carl\core\ModuleLoader::install($app['arg0']))
@@ -54,9 +68,9 @@ group('carl', function()
 	desc('Uninstall a module');
 	task('uninstall', function($app)
 	{
+		\carl\core\ModuleLoader::loadModuleData();
 		if (isset($app['arg0']))
 		{
-			\carl\core\ModuleLoader::loadModuleData(joinPath(dirname(dirname(__FILE__)), 'tests', 'modules'));
 			try
 			{
 				if (\carl\core\ModuleLoader::uninstall($app['arg0']))
@@ -82,9 +96,9 @@ group('carl', function()
 	desc('Upgrade a module');
 	task('upgrade', function($app)
 	{
+		\carl\core\ModuleLoader::loadModuleData();
 		if (isset($app['arg0']))
 		{
-			\carl\core\ModuleLoader::loadModuleData(joinPath(dirname(dirname(__FILE__)), 'tests', 'modules'));
 			try
 			{
 				if (\carl\core\ModuleLoader::upgrade($app['arg0']))
