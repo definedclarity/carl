@@ -485,7 +485,19 @@ class ModuleLoader extends \silk\core\Object
 
 	function install($name, $include_file = 'module.install.php')
 	{
-		if (self::getModuleInfo($name) !== false && !self::isInstalled($name) && self::getModuleInfo($name, 'meets_dependencies'))
+		if (self::getModuleInfo($name) === false)
+		{
+			throw new LoaderException('Module doesn\'t exist');
+		}
+		else if (self::isInstalled($name))
+		{
+			throw new LoaderException('Module is already installed');
+		}
+		else if (!self::getModuleInfo($name, 'meets_dependencies'))
+		{
+			throw new LoaderException('Module does not meet dependencies');
+		}
+		else
 		{
 			$version = self::getModuleInfo($name, 'version');
 
@@ -521,28 +533,25 @@ class ModuleLoader extends \silk\core\Object
 				}
 			}
 		}
-		else
-		{
-			if (self::getModuleInfo($name) === false)
-			{
-				throw new LoaderException('Module doesn\'t exist');
-			}
-			else if (self::isInstalled($name))
-			{
-				throw new LoaderException('Module is already installed');
-			}
-			else
-			{
-				throw new LoaderException('Module does not meet dependencies');
-			}
-		}
 
 		return false;
 	}
 
 	function uninstall($name, $include_file = 'module.uninstall.php')
 	{
-		if (self::getModuleInfo($name) !== false && self::isInstalled($name) && self::getModuleInfo($name, 'can_uninstall'))
+		if (self::getModuleInfo($name) === false)
+		{
+			throw new LoaderException('Module doesn\'t exist');
+		}
+		else if (!self::isInstalled($name))
+		{
+			throw new LoaderException('Module is not installed');
+		}
+		else if (!self::getModuleInfo($name, 'can_uninstall'))
+		{
+			throw new LoaderException('Module cannot be uninstalled');
+		}
+		else
 		{
 			$version = self::getModuleInfo($name, 'installed_version');
 
@@ -573,28 +582,25 @@ class ModuleLoader extends \silk\core\Object
 				return true;
 			}
 		}
-		else
-		{
-			if (self::getModuleInfo($name) === false)
-			{
-				throw new LoaderException('Module doesn\'t exist');
-			}
-			else if (!self::isInstalled($name))
-			{
-				throw new LoaderException('Module is not installed');
-			}
-			else
-			{
-				throw new LoaderException('Module cannot be uninstalled');
-			}
-		}
 
 		return false;
 	}
 
-	function upgrade($name)
+	function upgrade($name, $include_file = 'module.upgrade.php')
 	{
-		if (self::getModuleInfo($name) !== false && self::isInstalled($name) && self::getModuleInfo($name, 'needs_upgrade'))
+		if (self::getModuleInfo($name) === false)
+		{
+			throw new LoaderException('Module doesn\'t exist');
+		}
+		else if (!self::isInstalled($name))
+		{
+			throw new LoaderException('Module is not installed');
+		}
+		else if (!self::getModuleInfo($name, 'needs_upgrade'))
+		{
+			throw new LoaderException('Module is already the latest version');
+		}
+		else
 		{
 			$old_version = self::getModuleInfo($name, 'installed_version');
 			$new_version = self::getModuleInfo($name, 'version');
@@ -602,6 +608,20 @@ class ModuleLoader extends \silk\core\Object
 			$module_obj = ModuleMetadata::findOneBy(array('name' => $name));
 			if ($module_obj)
 			{
+				//Do we have an upgrade file?
+				$filename = self::getModuleFile($name, $include_file);
+				if ($filename)
+				{
+					try
+					{
+						@include($filename);
+					}
+					catch (\Exception $e)
+					{
+						throw new LoaderException($include_file . ' failed to load');
+					}
+				}
+
 				$module_obj['version'] = $new_version;
 				if ($module_obj->save())
 				{
@@ -609,6 +629,10 @@ class ModuleLoader extends \silk\core\Object
 					\silk\core\EventManager::sendEvent('carl:module:upgraded', $event_params);
 
 					return true;
+				}
+				else
+				{
+					throw new LoaderException('Could not save module metadata');
 				}
 			}
 		}
