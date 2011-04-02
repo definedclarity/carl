@@ -315,11 +315,14 @@ class ModuleLoader extends \silk\core\Object
 		{
 			$modules = array();
 
-			foreach (self::$module_list as $one_module)
+			if (count(self::$module_list))
 			{
-				if (self::isInstalled($one_module['name']) && self::isActive($one_module['name']))
+				foreach (self::$module_list as $one_module)
 				{
-					$modules[] = $one_module;
+					if (self::isInstalled($one_module['name']) && self::isActive($one_module['name']))
+					{
+						$modules[] = $one_module;
+					}
 				}
 			}
 

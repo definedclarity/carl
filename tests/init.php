@@ -25,8 +25,19 @@
 
 if (!defined('ROOT_DIR')) die();
 
-\carl\core\ModuleLoader::loadModuleData();
+//Make sure the modules get loaded and class paths get set
+@include(joinPath(dirname(dirname(__FILE__)), 'init.php'));
 
-addClassDirectory(joinPath(ROOT_DIR, 'vendor', 'modules'));
+//Grab list of just installed and active modules -- we don't
+//want tests to break because of missing dependencies
+$list = \carl\core\ModuleLoader::getModuleList();
+foreach($list as $one_module)
+{
+	$dir_to_mod = joinPath(dirname($one_module['module_file']), 'tests');
+	foreach($sub_dirs as $ext_dir)
+	{
+		$this->findAndAddTests($dir_to_mod, $ext_dir, $filter);
+	}
+}
 
 # vim:ts=4 sw=4 noet
