@@ -682,10 +682,8 @@ class ModuleLoader extends \silk\core\Object
 			$filename = self::getModuleFile($one_module['name'], $include_file);
 			if ($filename)
 			{
-				{
-					//We don't check the result -- we just run it and hope it doesn't crash
-					@include($filename);
-				}
+				//We don't check the result -- we just run it and hope it doesn't crash
+				include($filename);
 			}
 		}
 	}

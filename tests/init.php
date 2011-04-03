@@ -25,12 +25,34 @@
 
 if (!defined('ROOT_DIR')) die();
 
-//Make sure the modules get loaded and class paths get set
-@include(joinPath(dirname(dirname(__FILE__)), 'init.php'));
+addClassDirectory(joinPath(ROOT_DIR, 'vendor', 'modules'));
+\carl\core\ModuleLoader::loadModuleData();
 
 //Grab list of just installed and active modules -- we don't
 //want tests to break because of missing dependencies
-$list = \carl\core\ModuleLoader::getModuleList();
+$list = \carl\core\ModuleLoader::getModuleList(false);
+foreach($list as $one_module)
+{
+	try
+	{
+		\carl\core\ModuleLoader::uninstall($one_module['name']);
+	}
+	catch (\Exception $e) {}
+
+	\carl\core\ModuleLoader::unloadModuleData();
+	\carl\core\ModuleLoader::loadModuleData();
+
+	try
+	{
+		\carl\core\ModuleLoader::install($one_module['name']);
+	}
+	catch (\Exception $e) {}
+}
+
+\carl\core\ModuleLoader::unloadModuleData();
+\carl\core\ModuleLoader::loadModuleData();
+
+$list = \carl\core\ModuleLoader::getModuleList('true');
 foreach($list as $one_module)
 {
 	$dir_to_mod = joinPath(dirname($one_module['module_file']), 'tests');
