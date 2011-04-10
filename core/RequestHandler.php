@@ -25,39 +25,21 @@
 
 namespace carl\core;
 
-class RouteHandler extends \silk\core\Object
+class RequestHandler extends \silk\core\Object
 {
-	public static function handleRequest($params, $requested_uri, &$env)
+	protected $app = null;
+
+	function __construct(&$app)
 	{
-		//Get list of all the modules that act as request_handlers
-		$modules = ModuleLoader::hasCapability('request_handler');
-
-		//Loop through them and add them to the list of 
-		$middleware = array();
-		$previous = null;
-		foreach ($modules as $one_module)
-		{
-			$name = $one_module['name'];
-			$filename = ModuleLoader::getModuleFile($name, 'RequestHandler.php');
-			if ($filename)
-			{
-				$class_name = joinNamespace(ModuleLoader::getModuleInfo($name, 'namespace'), 'RequestHandler');
-				if (!class_exists($class_name))
-				{
-					include_once($filename);
-				}
-
-				$middleware[$name] = new $class_name($previous);
-				$previous &= $middleware[$name];
-			}
-		}
-
-		reset($middleware);
-		$first = current(array_keys($middleware));
-		if (isset($middleware[$first]) && is_object($middleware[$first]))
-			return $middleware[$first]->call($env);
-		else
-			return array(404, array("Content-Type" => "text/html"), array("Not Found"));
+		parent::__construct();
+		$this->app =& $app;
+	}
+	
+	public function call(&$env)
+	{
+		//return array(200, array('Content-Type' => 'text/html'), array(''));
+		list($status, $headers, $body) = $this->app->call($env);
+		return array($status, $headers, $body);
 	}
 }
 

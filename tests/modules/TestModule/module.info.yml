@@ -17,7 +17,7 @@ events_sent:
     - some_event
     - some_other_event
 capabilities:
-    - parses_url
+    - request_handler
     - does_something_cool
 plugins:
     - name: test_virtual_plugin
