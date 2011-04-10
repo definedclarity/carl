@@ -398,13 +398,13 @@ class ModuleLoader extends \silk\core\Object
 					{
 						if ($one_item == $capability_name)
 						{
-							$modules[] = $one_module['name'];
+							$modules[] = $one_module;
 						}
 					}
 				}
 			}
 		}
-		
+
 		return $modules;
 	}
 	
@@ -462,6 +462,8 @@ class ModuleLoader extends \silk\core\Object
 
 		if (is_dir($dir))
 		{
+			addClassDirectory($dir);
+
 			$ite=new \RecursiveDirectoryIterator($dir);
 			foreach (new \RecursiveIteratorIterator($ite) as $filename => $cur)
 			{

@@ -36,7 +36,7 @@ module.routes.php
     every request, so keep it as small as possible for performance reasons.
 
 RequestHandler.php
-    If the module is defined as a "request_handler" in the metdata, this file
+    If the module is defined as a "request_handler" in the capabilities, this file
     will be loaded. Request handlers will be treated similar to Rack middleware
     in that a class named RequestHandler will be instantiated, and the method
     call(&$env) will be called. If the handler can handle the request, it can

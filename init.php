@@ -27,6 +27,4 @@ if (!defined('ROOT_DIR')) die();
 
 \carl\core\ModuleLoader::loadModuleData();
 
-addClassDirectory(joinPath(ROOT_DIR, 'vendor', 'modules'));
-
 # vim:ts=4 sw=4 noet
